@@ -81,4 +81,4 @@ def prototypical_loss(input, target, n_support):
     _, y_hat = log_p_y.max(2)
     acc_val = y_hat.eq(target_inds.squeeze(2)).float().mean()
 
-    return loss_val,  
+    return loss_val, acc_val

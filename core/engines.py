@@ -1,6 +1,21 @@
 import torch
 import os
 import numpy as np
+from tqdm import tqdm
+import sys
+
+ROOT = os.getcwd()
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+
+from core.loss import prototypical_loss as loss_fn
+from tools.utils.init_engine import init_seed, init_dataset, init_protonet
+
+
+def save_list_to_file(path, thelist):
+    with open(path, 'w') as f:
+        for item in thelist:
+            f.write("%s\n" % item)
 
 
 def train(opt, tr_dataloader, model, optim, lr_scheduler, val_dataloader=None):
@@ -12,6 +27,7 @@ def train(opt, tr_dataloader, model, optim, lr_scheduler, val_dataloader=None):
 
     if val_dataloader is None:
         best_state = None
+    
     train_loss = []
     train_acc = []
     val_loss = []
@@ -25,6 +41,7 @@ def train(opt, tr_dataloader, model, optim, lr_scheduler, val_dataloader=None):
         print('=== Epoch: {} ==='.format(epoch))
         tr_iter = iter(tr_dataloader)
         model.train()
+        
         for batch in tqdm(tr_iter):
             optim.zero_grad()
             x, y = batch
@@ -36,14 +53,20 @@ def train(opt, tr_dataloader, model, optim, lr_scheduler, val_dataloader=None):
             optim.step()
             train_loss.append(loss.item())
             train_acc.append(acc.item())
+
         avg_loss = np.mean(train_loss[-opt.iterations:])
         avg_acc = np.mean(train_acc[-opt.iterations:])
+        
         print('Avg Train Loss: {}, Avg Train Acc: {}'.format(avg_loss, avg_acc))
+        
         lr_scheduler.step()
+        
         if val_dataloader is None:
             continue
+        
         val_iter = iter(val_dataloader)
         model.eval()
+        
         for batch in val_iter:
             x, y = batch
             x, y = x.to(device), y.to(device)
@@ -52,12 +75,13 @@ def train(opt, tr_dataloader, model, optim, lr_scheduler, val_dataloader=None):
                                 n_support=opt.num_support_val)
             val_loss.append(loss.item())
             val_acc.append(acc.item())
+            
         avg_loss = np.mean(val_loss[-opt.iterations:])
         avg_acc = np.mean(val_acc[-opt.iterations:])
-        postfix = ' (Best)' if avg_acc >= best_acc else ' (Best: {})'.format(
-            best_acc)
-        print('Avg Val Loss: {}, Avg Val Acc: {}{}'.format(
-            avg_loss, avg_acc, postfix))
+        postfix = ' (Best)' if avg_acc >= best_acc else ' (Best: {})'.format(best_acc)
+        
+        print('Avg Val Loss: {}, Avg Val Acc: {}{}'.format(avg_loss, avg_acc, postfix))
+        
         if avg_acc >= best_acc:
             torch.save(model.state_dict(), best_model_path)
             best_acc = avg_acc
