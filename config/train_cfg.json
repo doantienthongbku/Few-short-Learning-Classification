@@ -1,0 +1,11 @@
+{
+    "materials_path": "../materials",
+    "epochs": 200,
+    "save_each_epoch": 20,
+    "shot": 5,
+    "query": 15,
+    "train_way": 20,
+    "test_way": 5,
+    "save_path": "./save/project-1",
+    "gpu": "0"
+}
